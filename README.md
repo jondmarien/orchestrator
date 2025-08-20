@@ -4,13 +4,13 @@ A lightweight, Python-based CLI tool and library for protocol-agnostic agent orc
 
 ## Features
 
-- Dual-protocol orchestration: MCP for tools, A2A for agent collaboration  
-- Intelligent reasoning engine powered by GPT-OSS (Hugging Face Inference)  
-- Flexible CLI with mode flags (`--faves`, `--useful`, `--essential`), keyword filters (`--words`), and alias (`ts`)  
-- AsyncIO-based drivers for STDIO/SSE (MCP) and HTTP/JSON-RPC (A2A)  
-- Workflow engine with dependency management, retries, and state persistence  
-- Enterprise-grade security: OAuth2/OpenID Connect, token management, TLS  
-- Configurable via Pydantic models (YAML/JSON) and environment variables  
+- Dual-protocol orchestration: MCP for tools, A2A for agent collaboration
+- Intelligent reasoning engine powered by GPT-OSS (Hugging Face Inference)
+- Flexible CLI with mode flags (`--faves`, `--useful`, `--essential`), keyword filters (`--words`), and alias (`ts`)
+- AsyncIO-based drivers for STDIO/SSE (MCP) and HTTP/JSON-RPC (A2A)
+- Workflow engine with dependency management, retries, and state persistence
+- Enterprise-grade security: OAuth2/OpenID Connect, token management, TLS
+- Configurable via Pydantic models (YAML/JSON) and environment variables
 - Comprehensive testing, CI/CD, Docker packaging, and examples
 
 ## Installation
@@ -57,8 +57,8 @@ a2a_endpoints:
 
 Environment variables:
 
-- `HF_API_KEY` — Hugging Face API token  
-- `A2A_AUTH_TOKEN` — default token for A2A endpoints  
+- `HF_API_KEY` — Hugging Face API token
+- `A2A_AUTH_TOKEN` — default token for A2A endpoints
 
 ## Usage
 
@@ -101,11 +101,11 @@ uv run pytest
 
 ## Contributing
 
-1. Fork the repository  
-2. Create a feature branch `git checkout -b feature/your-feature`  
-3. Install dependencies and run tests  
-4. Commit and push  
-5. Open a Pull Request  
+1. Fork the repository
+2. Create a feature branch `git checkout -b feature/your-feature`
+3. Install dependencies and run tests
+4. Commit and push
+5. Open a Pull Request
 
 Please follow code style (`black`, `flake8`) and include tests for new features.
 

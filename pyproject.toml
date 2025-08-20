@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling>=1.26.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "orchestrator"
+version = "0.1.0"
+description = "Python orchestrator with MCP aggregator and A2A support"
+authors = [
+  { name = "Jon Marien", email = "jon@chron0.tech" },
+]
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["MCP", "A2A", "orchestrator", "aggregation", "agents"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+dependencies = [
+  "anyio>=4.10.0",
+  "pydantic>=2.6",
+  "pyyaml>=6.0.2",
+  "typer>=0.12",
+]
+
+[project.scripts]
+orchestrator-mcp-aggregator = "orchestrator.cli.mcp_aggregator:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "ruff>=0.5",
+  "pre-commit>=3.7",
+]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["docs", "orchestrator_mvp", "combine-mcp"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "TID"]
+ignore = [
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-q"
+testpaths = [
+  "tests",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/orchestrator"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "pytest-asyncio>=1.1.0",
+    "ruff>=0.12.9",
+    "ty>=0.0.1a19",
+]
