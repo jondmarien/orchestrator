@@ -5,7 +5,7 @@ import logging
 import sys
 from typing import Any
 
-from orchestrator.rpc.jsonrpc import make_error, make_response
+from orchestrator.rpc.jsonrpc import make_response
 from orchestrator.transport.stdio import StdioJsonRpcFramer
 from orchestrator.utils.stdout_guard import StdoutGuard
 
@@ -62,6 +62,12 @@ class MCPAggregatorServer:
                             caps = await controller.initialize_capabilities()
                         except Exception as e:  # keep serving even if aggregation fails
                             logger.error("Capability aggregation failed: %s", e)
+                    # Apply client profile shaping (cursor: tools only)
+                    import os
+
+                    profile = os.environ.get("ORCH_CLIENT_PROFILE")
+                    if profile == "cursor":
+                        caps = {"tools": caps.get("tools", {}), "prompts": {}, "resources": {}}
                     result = {
                         "capabilities": caps,
                         "serverInfo": {"name": self.name, "version": "0.1.0"},
@@ -69,12 +75,26 @@ class MCPAggregatorServer:
                     if msg_id is not None:
                         self._write_stdout(framer, make_response(msg_id, result))
                 else:
-                    # Placeholder routing: not implemented yet
+                    # Route via controller if present; otherwise method not found
+                    routed = None
+                    controller = getattr(self, "_controller", None)
+                    if controller is not None and msg_id is not None:
+                        try:
+                            routed = await controller.route_request(method, msg.get("params"))
+                        except Exception as e:
+                            logger.error("Routing error: %s", e)
+                            routed = {"error": {"code": -32002, "message": str(e)}}
                     if msg_id is not None:
-                        self._write_stdout(
-                            framer,
-                            make_error(msg_id, -32601, f"Method not found: {method}"),
-                        )
+                        if routed and "result" in routed:
+                            self._write_stdout(framer, make_response(msg_id, routed["result"]))
+                        else:
+                            err = (routed or {}).get("error") or {
+                                "code": -32601,
+                                "message": f"Method not found: {method}",
+                            }
+                            self._write_stdout(
+                                framer, {"jsonrpc": "2.0", "id": msg_id, "error": err}
+                            )
 
                 if self._shutdown_event.is_set():
                     break

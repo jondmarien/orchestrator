@@ -39,7 +39,14 @@ class UpstreamClient:
     async def initialize(self) -> dict:
         return await self.send_request("initialize", {})
 
-    async def send_request(self, method: str, params: Any | None = None) -> dict:
+    async def send_request(
+        self,
+        method: str,
+        params: Any | None = None,
+        *,
+        timeout: float | None = 5.0,
+        retries: int = 0,
+    ) -> dict:
         req_id = self._next_id
         self._next_id += 1
         req = {"jsonrpc": "2.0", "id": req_id, "method": method}
@@ -47,11 +54,30 @@ class UpstreamClient:
             req["params"] = params
         data = json.dumps(req, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         header = f"Content-Length: {len(data)}\r\n\r\n".encode("ascii")
-        fut: asyncio.Future[dict] = asyncio.get_event_loop().create_future()
-        self._pending[req_id] = fut
-        assert self._stdin is not None
-        self._stdin.write(header + data)
-        await self._stdin.drain()
+        attempt = 0
+        while True:
+            fut: asyncio.Future[dict] = asyncio.get_event_loop().create_future()
+            self._pending[req_id] = fut
+            assert self._stdin is not None
+            self._stdin.write(header + data)
+            await self._stdin.drain()
+            try:
+                if timeout is not None:
+                    return await asyncio.wait_for(fut, timeout=timeout)
+                return await fut
+            except TimeoutError:
+                attempt += 1
+                logger.warning(
+                    "Upstream request timed out: method=%s id=%s attempt=%d",
+                    method,
+                    req_id,
+                    attempt,
+                )
+                # Clean up pending on timeout
+                self._pending.pop(req_id, None)
+                if attempt > retries:
+                    raise
+                await asyncio.sleep(min(0.1 * (2 ** (attempt - 1)), 1.0))
         return await fut
 
     async def _read_loop(self) -> None:
