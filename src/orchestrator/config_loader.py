@@ -39,6 +39,61 @@ def load_config(path: str) -> AggregatorConfig:
         data = yaml.safe_load(text)  # type: ignore[no-redef]
     else:
         data = json.loads(text)
+
+    # Normalize alternative formats to AggregatorConfig schema
+    if isinstance(data, dict):
+        # Array style: { "servers": [ { name, command, args?, env? } ] }
+        if "servers" in data and isinstance(data["servers"], list):
+            upstream: list[dict] = []
+            for s in data["servers"]:
+                if not isinstance(s, dict):
+                    continue
+                cmd = s.get("command")
+                args = s.get("args")
+                if isinstance(cmd, list):
+                    command = cmd + (args or [])
+                elif isinstance(cmd, str):
+                    command = [cmd] + (args or [])
+                else:
+                    command = []
+                upstream.append(
+                    {
+                        "name": s.get("name"),
+                        "command": command,
+                        "env": s.get("env", {}) or {},
+                        "include_tools": s.get("include_tools"),
+                        "exclude_tools": s.get("exclude_tools"),
+                    }
+                )
+            data = {**data, "upstream": upstream}
+
+        # Object style: { "mcpServers": { name: { command, args?, env? } } }
+        if "mcpServers" in data and isinstance(data["mcpServers"], dict):
+            upstream: list[dict] = data.get("upstream", []) or []
+            for name, s in data["mcpServers"].items():
+                if not isinstance(s, dict):
+                    continue
+                if s.get("disabled") is True:
+                    continue
+                cmd = s.get("command")
+                args = s.get("args")
+                if isinstance(cmd, list):
+                    command = cmd + (args or [])
+                elif isinstance(cmd, str):
+                    command = [cmd] + (args or [])
+                else:
+                    command = []
+                upstream.append(
+                    {
+                        "name": name,
+                        "command": command,
+                        "env": s.get("env", {}) or {},
+                        "include_tools": (s.get("tools", {}) or {}).get("allowed"),
+                    }
+                )
+            data = {k: v for k, v in data.items() if k != "mcpServers"}
+            data["upstream"] = upstream
+
     try:
         cfg = AggregatorConfig.model_validate(data)
     except ValidationError as e:

@@ -101,6 +101,57 @@ def stdio(
         logging.getLogger(__name__).info("Received KeyboardInterrupt, shutting down.")
 
 
+@app.command("http-sse")
+def http_sse(
+    host: str = typer.Option("127.0.0.1", help="Bind host"),
+    port: int = typer.Option(7332, help="Bind port"),
+    config: str | None = typer.Option(None, "--config", "-c", help="Path to YAML/JSON config"),
+) -> None:
+    """Run the MCP aggregator over HTTP/SSE (ASGI)."""
+    try:
+        import asyncio
+
+        from orchestrator.mcp.aggregator.controller import AggregationController
+        from orchestrator.mcp.aggregator.upstream import UpstreamProcessManager
+        from orchestrator.transport.http_sse import HttpSseTransport
+
+        controller = None
+        cfg = None
+        upstream_manager = None
+        if config:
+            from orchestrator.config_loader import load_config
+
+            cfg = load_config(config)
+
+        async def _run() -> None:
+            nonlocal controller, upstream_manager
+            use_sdk = False
+            try:
+                import importlib
+
+                importlib.import_module("mcp.client.stdio")
+                use_sdk = True
+            except Exception:
+                use_sdk = False
+
+            if cfg and cfg.upstream:
+                if use_sdk:
+                    controller = AggregationController(upstream_servers=cfg.upstream)
+                else:
+                    upstream_manager = UpstreamProcessManager()
+                    ups = await upstream_manager.start_all(cfg.upstream)
+                    controller = AggregationController(upstream_processes=ups)
+            else:
+                controller = AggregationController([])
+
+            transport = HttpSseTransport()
+            await transport.run(controller, host=host, port=port)
+
+        asyncio.run(_run())
+    except KeyboardInterrupt:
+        logging.getLogger(__name__).info("Received KeyboardInterrupt, shutting down.")
+
+
 def main() -> None:
     app()
 

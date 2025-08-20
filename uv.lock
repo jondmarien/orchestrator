@@ -259,6 +259,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "typer" },
+    { name = "uvicorn" },
 ]
 
 [package.optional-dependencies]
@@ -286,6 +287,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
     { name = "typer", specifier = ">=0.12" },
+    { name = "uvicorn", specifier = ">=0.35.0" },
 ]
 provides-extras = ["dev"]
 
