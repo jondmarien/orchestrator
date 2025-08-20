@@ -25,6 +25,9 @@ class AggregatorConfig(BaseModel):
     upstream: list[UpstreamServer] = Field(default_factory=list)
     transport: TransportConfig = Field(default_factory=TransportConfig)
     strict_stdout: bool = True
+    include_tools: list[str] | None = None
+    exclude_tools: list[str] | None = None
+    client_profile: Literal["cursor", "windsurf"] | None = None
 
 
 __all__ = [

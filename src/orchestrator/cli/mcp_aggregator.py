@@ -47,10 +47,17 @@ def default(
     ctx: typer.Context,
     name: str | None = typer.Option(None, help="Server name for diagnostics"),
     config: str | None = typer.Option(None, "--config", "-c", help="Path to YAML/JSON config"),
+    client_profile: str | None = typer.Option(
+        None, "--client-profile", help="Client profile: cursor|windsurf (overrides config/env)"
+    ),
 ) -> None:
     """Run the MCP aggregator over stdio (for MCP clients like Cursor)."""
     if ctx.invoked_subcommand is None:
         try:
+            import os
+
+            if client_profile:
+                os.environ["ORCH_CLIENT_PROFILE"] = client_profile
             asyncio.run(_run_stdio(name, config))
         except KeyboardInterrupt:
             logging.getLogger(__name__).info("Received KeyboardInterrupt, shutting down.")
@@ -60,9 +67,17 @@ def default(
 def stdio(
     name: str | None = typer.Option(None, help="Server name for diagnostics"),
     config: str | None = typer.Option(None, "--config", "-c", help="Path to YAML/JSON config"),
+    client_profile: str | None = typer.Option(
+        None, "--client-profile", help="Client profile: cursor|windsurf (overrides config/env)"
+    ),
 ) -> None:
     """Run the MCP aggregator over stdio (for MCP clients like Cursor)."""
     try:
+        # Respect CLI overrides for client profile by setting env var for this process
+        import os
+
+        if client_profile:
+            os.environ["ORCH_CLIENT_PROFILE"] = client_profile
         asyncio.run(_run_stdio(name, config))
     except KeyboardInterrupt:
         logging.getLogger(__name__).info("Received KeyboardInterrupt, shutting down.")

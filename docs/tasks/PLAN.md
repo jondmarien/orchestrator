@@ -18,10 +18,10 @@ Legend:
 - [x] CLI wiring with --config and graceful shutdown
 - [x] UpstreamClient for stdio JSON-RPC
 - [x] Aggregate initialize across upstreams (capabilities union)
-- [ ] Routing scaffold (forward non-initialize requests)
-- [ ] Discovery parity (tools/resources/prompts), include/exclude filters
-- [ ] Robust error handling and logging structure
-- [ ] Cursor/Claude Desktop compatibility validation
+- [x] Routing scaffold (forward non-initialize requests)
+- [x] Discovery parity (tools/resources/prompts), include/exclude filters
+- [x] Robust error handling and logging structure
+- [x] Cursor/Claude Desktop compatibility validation (initial: Cursor & Windsurf)
 
 ## Phase 2: Integration/Config (Priority 2)
 
