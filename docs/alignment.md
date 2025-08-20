@@ -1,5 +1,7 @@
 # Orchestrator Implementation Alignment
 
+> 2025-08-20 update: Adopted official MCP Python SDK, added SDK-aware upstream client, preserved stdio fallback, and scaffolded HTTP/SSE foundation. CLI now prefers SDK path when available. Documentation below reflects these updates.
+
 ## Project Scope Alignment
 
 ### ✅ Aligned Items
@@ -17,7 +19,14 @@
 
 ### 🔄 Adjustments Needed
 
-#### 1. **Multi-Client & Transport Support (NEW)**
+#### 0. Official MCP Python SDK Integration (NEW)
+
+- Adopt the official SDK (mcp[cli]) for client/server primitives
+- Upstream client is now SDK-aware; when SDK is available and configs are provided, connections should use stdio_client + ClientSession
+- Temporary compatibility: a minimal stdio JSON-RPC fallback remains for environments without the SDK
+- Benefits: protocol correctness, easier expansion to resources/prompts/structured outputs, and simpler addition of SSE/streamable-http later
+
+#### 1. **Multi-Client & Transport Support (UPDATED)**
 
 - **Plan**: Focused primarily on Cursor compatibility
 - **Our Approach**: Support ALL major MCP clients and transports:
@@ -77,6 +86,7 @@
   - All logs to stderr/file only
   - Clean JSON-RPC on stdout
 - **Rationale**: Essential for Cursor integration
+- Additional compatibility envs mirrored from combine-mcp: MCP_PROTOCOL_VERSION, client profile shaping for Cursor-like behavior (tools-only exposure)
 
 #### 5. **A2A Protocol Integration (NEW)**
 
@@ -143,12 +153,27 @@ Both protocols can share transport implementations:
 
 ### Phase 1: MCP Aggregator (Priority 1)
 
+Incremental milestones now include SDK adoption and transport scaffolding:
+
+1. Port combine-mcp to Python (parity for tool aggregation and filtering)
+2. Integrate MCP Python SDK for upstream client/session over stdio
+3. Keep minimal stdio fallback for environments without SDK
+4. Scaffold ASGI HTTP/SSE transport surface (defer protocol wiring to Phase 2)
+5. Ensure Cursor compatibility and strict stdout hygiene
+6. Comprehensive tests (discovery, merge, routing, server loop)
+
 1. Port combine-mcp to Python
 2. Ensure Cursor compatibility
 3. Support existing config formats
 4. Comprehensive testing
 
 ### Phase 2: Integration (Priority 2)
+
+1. Complete SDK-first path for upstreams (remove fallback where appropriate)
+2. Implement HTTP/SSE transport bridging to controller
+3. Add capability aggregation beyond tools (prompts, resources) via SDK types
+4. CLI flags/envs to select transport (stdio|http-sse) per config
+5. Documentation reflecting SDK usage patterns (initialize, list, call)
 
 1. Protocol driver abstraction
 2. CLI commands for MCP
@@ -173,6 +198,11 @@ Both protocols can share transport implementations:
 - GitHub Actions for CI/CD
 
 ### 📝 Additional Decisions
+
+- MCP SDK: Use official modelcontextprotocol/python-sdk (mcp[cli]) for stdio and streamable-http
+- Transport foundation: ASGI app scaffold for /rpc and /events (SSE), wiring later
+- Config formats: Support Cursor-style { mcpServers: {} } and array-based { servers: [] }
+- Tool name policy: sanitize dashes to underscores; optional per-server allowlist
 
 - **JSON-RPC**: Implement minimal helpers for MCP protocol
 - **Tool Filtering**: Exact parity with combine-mcp logic
@@ -221,6 +251,11 @@ Both protocols can share transport implementations:
 - [ ] Community adoption metrics met
 
 ## Next Steps
+
+- Finalize SDK-based stdio client to launch upstreams via StdioServerParameters instead of attaching to pre-spawned processes
+- Implement HTTP/SSE transport wiring to controller, mirroring SDK streamable_http examples
+- Expand capability aggregation to prompts/resources and structured outputs
+- Tighten docs with Context7-linked examples and keep in sync with SDK updates
 
 1. **Continue with Task #2**: Review complete, proceeding with implementation
 2. **Create package structure** as outlined above

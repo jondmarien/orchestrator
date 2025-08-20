@@ -28,6 +28,7 @@ class MCPAggregatorServer:
         self,
         name: str = "orchestrator-mcp-aggregator",
         initial_capabilities: dict[str, Any] | None = None,
+        controller: Any | None = None,
     ) -> None:
         self.name = name
         self._shutdown_event = asyncio.Event()
@@ -36,6 +37,9 @@ class MCPAggregatorServer:
             "prompts": {},
             "resources": {},
         }
+        # Optional aggregation controller for routing and capability merge
+        if controller is not None:
+            self._controller = controller
 
     def _write_stdout(self, framer: StdioJsonRpcFramer, obj: dict[str, Any]) -> None:
         data = framer.encode(obj)

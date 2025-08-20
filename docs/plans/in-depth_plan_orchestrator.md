@@ -135,23 +135,31 @@ orchestrator/
 
 ## 4. Phase 1: Foundation \& Porting (Weeks 1–3)
 
-### 4.1. Port MCP Aggregator to Python
+Note (2025-08-20): We have adopted the official Model Context Protocol Python SDK (mcp[cli]). The MCP aggregator will use the SDK’s stdio_client + ClientSession for upstream connections, with a temporary minimal JSON-RPC fallback where the SDK is unavailable. An ASGI HTTP/SSE surface is scaffolded for later.
 
-4.1.1. **Subprocess \& STDIO Transport**
+### 4.1. Port MCP Aggregator to Python (UPDATED)
 
-- In `drivers/mcp.py`, implement `async def initialize(self):`, `async def list_tools(self)`, `async def call_tool(self, name, params)`.
-- Spawn with `await asyncio.create_subprocess_exec()` using server command and args.
-- Pipe stdout → parse JSON, stderr → log.
+4.1.1. **STDIO Transport via MCP SDK**
 
-4.1.2. **SSE Transport (Optional)**
+- Use SDK patterns: from mcp.client.session import ClientSession and from mcp.client.stdio import StdioServerParameters, stdio_client
+- For each upstream config { command, args, env }, connect via:
+  - async with stdio_client(StdioServerParameters(command=..., args=..., env=...)) as (read, write):
+    - async with ClientSession(read, write) as session:
+      - await session.initialize(); await session.list_tools(); await session.call_tool(...)
+- Keep a minimal JSON-RPC fallback path only for environments without the SDK
 
-- Use `aiohttp.ClientSession().get(..., timeout=None)` to consume SSE from `http://server/sse`.
-- Parse events, map to `call_tool` results.
+4.1.2. **HTTP/SSE Transport (Foundation Only)**
+
+- Provide an ASGI app scaffold with:
+  - GET /events → text/event-stream placeholder
+  - POST /rpc → returns Not Implemented
+- Defer full protocol wiring to Phase 2, where we can mirror SDK streamable_http examples
 
 4.1.3. **Tool Discovery \& Prefixing**
 
-- Mirror combine-mcp’s `discoverTools` logic: list tools, sanitize names, prefix with server name.
-- Implement filtering by allowed tools in config.
+- Mirror combine-mcp’s logic: list tools per upstream, sanitize name dashes to underscores, prefix with server name
+- Implement filtering by allowed tools (include/allowed list semantics)
+- Keep Cursor mode/tool limits in mind (tools-only exposure profile)
 
 
 ### 4.2. Build A2A Driver
@@ -171,11 +179,14 @@ orchestrator/
 - Support WebSocket or pub/sub for asynchronous callbacks using `websockets` or `httpx` streaming.
 
 
-### 4.3. Configuration Models
+### 4.3. Configuration Models (UPDATED)
 
 4.3.1. **Pydantic Settings**
 
-- In `config.py`, define `class MCPServer(BaseModel)`, `class A2AEndpoint(BaseModel)`, `class Settings(BaseSettings)` reading from `~/.ts/config.yaml` or env vars.
+- Support both combine-mcp-compatible formats:
+  - Cursor-style object { "mcpServers": { name: { command, args, env, tools.allowed } } }
+  - Array style { "servers": [ { name, command, args, env, tools.allowed } ] }
+- Our current Pydantic models: UpstreamServer, AggregatorConfig; loader converts formats into common structures
 
 4.3.2. **Config Loading**
 
@@ -184,16 +195,13 @@ settings = Settings(_env_file="~/.ts/config.env", config_file="~/.ts/config.yaml
 ```
 
 
-### 4.4. CLI Scaffolding
+### 4.4. CLI Scaffolding (UPDATED)
 
 4.4.1. **Typer App**
 
-- In `cli/ts.py`, create `app = Typer()`.
-- Decorate functions:
-- `@app.command("q")` → `async def query(...)`
-- `@app.command("orchestrate")`
-- `@app.command("discover")`
-- `@app.command("workflow")`
+- Provide `orchestrator-mcp-aggregator` entry point (Typer)
+- Default command runs stdio server; detects SDK availability and chooses SDK path without spawning subprocesses, otherwise falls back
+- Future: add http-sse subcommand to run ASGI app
 
 4.4.2. **Flag Definitions**
 
@@ -221,6 +229,10 @@ settings = Settings(_env_file="~/.ts/config.env", config_file="~/.ts/config.yaml
 ***
 
 ## 5. Phase 2: Intelligence Integration (Weeks 4–8)
+
+Also complete SDK-first path and transport wiring:
+- Finish migrating upstream client to pure SDK usage (remove fallback where possible)
+- Implement HTTP/SSE protocol wiring to controller (map POST /rpc to route_request; stream notifications on /events)
 
 ### 5.1. Hugging Face \& GPT-OSS Setup
 

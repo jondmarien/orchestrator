@@ -26,9 +26,27 @@ async def _run_stdio(name: str | None, config_path: str | None) -> None:
         upstream_manager = UpstreamProcessManager()
 
     try:
-        if upstream_manager and cfg and cfg.upstream:
-            ups = await upstream_manager.start_all(cfg.upstream)
-            controller = AggregationController(ups)
+        # Prefer SDK-backed path: construct controller with configs (no local process launch)
+        use_sdk = False
+        try:
+            import importlib
+
+            importlib.import_module("mcp.client.stdio")
+            use_sdk = True
+        except Exception:
+            use_sdk = False
+
+        if cfg and cfg.upstream:
+            if use_sdk:
+                controller = AggregationController(upstream_servers=cfg.upstream)
+            else:
+                # Fall back to local subprocess launch + lightweight client
+                if upstream_manager is None:
+                    from orchestrator.mcp.aggregator.upstream import UpstreamProcessManager
+
+                    upstream_manager = UpstreamProcessManager()
+                ups = await upstream_manager.start_all(cfg.upstream)
+                controller = AggregationController(upstream_processes=ups)
         server = MCPAggregatorServer(
             name=server_name, initial_capabilities=None, controller=controller
         )
