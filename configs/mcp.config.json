@@ -1,0 +1,26 @@
+{
+  "servers": [
+    {
+      "name": "fetch",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
+      "env": {}
+    },
+    {
+      "name": "sequential-thinking",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "env": {}
+    },
+    {
+      "name": "context7",
+      "command": ["npx", "-y", "@upstash/context7-mcp"],
+      "env": {}
+    },
+    {
+      "name": "taskflow",
+      "command": ["npx", "-y", "@pinkpixel/taskflow-mcp"],
+      "env": {
+        "TASK_MANAGER_FILE_PATH": "J:/mcp-servers/taskflow/tasks.json"
+      }
+    }
+  ]
+}

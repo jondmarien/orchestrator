@@ -1,0 +1,39 @@
+{
+  "$schema": "https://taskflow-mcp-schema.example/schema.json",
+  "project": "orchestrator",
+  "version": "0.1.0",
+  "phases": [
+    {
+      "name": "MCP Aggregator Port",
+      "priority": 1,
+      "tasks": [
+        {"id": "tooling", "title": "Repo/tooling setup", "status": "done"},
+        {"id": "scaffold", "title": "Package scaffold", "status": "done"},
+        {"id": "stdout", "title": "Stdout hygiene utilities", "status": "done"},
+        {"id": "stdio-framer", "title": "Stdio transport framer", "status": "done"},
+        {"id": "stdio-loop", "title": "Minimal MCP stdio loop with initialize", "status": "done"},
+        {"id": "upstream-proc", "title": "Upstream process manager", "status": "done"},
+        {"id": "cli-config", "title": "CLI wiring with --config and graceful shutdown", "status": "done"},
+{"id": "upstream-client", "title": "UpstreamClient for stdio JSON-RPC", "status": "done"}
+{"id": "aggregate-init", "title": "Aggregate initialize across upstreams", "status": "done"}
+{"id": "routing", "title": "Routing scaffold", "status": "done"}
+{"id": "discovery", "title": "Discovery parity and filters", "status": "done"}
+{"id": "errors-logging", "title": "Robust error handling and logging", "status": "done"}
+{"id": "compat", "title": "Client compatibility validation (Cursor & Windsurf initial)", "status": "done"}
+      ]
+    },
+    {"name": "Integration/Config", "priority": 2, "tasks": [
+      {"id": "config-parity", "title": "Config parity", "status": "pending"},
+      {"id": "cli-validate", "title": "CLI validation/dry-run", "status": "pending"},
+      {"id": "docs", "title": "Documentation", "status": "pending"}
+    ]},
+    {"name": "Transports", "priority": 3, "tasks": [
+      {"id": "http-sse", "title": "HTTP+SSE transport", "status": "pending"},
+      {"id": "ws", "title": "WebSocket transport", "status": "pending"}
+    ]},
+    {"name": "A2A and Bridging", "priority": 4, "tasks": [
+      {"id": "a2a", "title": "A2A drivers", "status": "pending"},
+      {"id": "bridge", "title": "MCP↔A2A bridging", "status": "pending"}
+    ]}
+  ]
+}
