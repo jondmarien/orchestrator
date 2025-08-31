@@ -144,6 +144,18 @@ def http_sse(
             else:
                 controller = AggregationController([])
 
+            # Warm up and log upstream initialization status
+            try:
+                caps = await controller.initialize_capabilities()
+                logging.getLogger(__name__).info(
+                    "Initialized upstreams via HTTP/SSE: tools=%d prompts=%d resources=%d",
+                    len(caps.get("tools", {})),
+                    len(caps.get("prompts", {})),
+                    len(caps.get("resources", {})),
+                )
+            except Exception as e:
+                logging.getLogger(__name__).warning("Initialization warmup failed: %s", e)
+
             transport = HttpSseTransport()
             await transport.run(controller, host=host, port=port)
 

@@ -1,8 +1,11 @@
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
 
+from orchestrator.config import UpstreamServer
+from orchestrator.mcp.aggregator.client import UpstreamClient
 from orchestrator.mcp.aggregator.controller import AggregationController
 from orchestrator.mcp.aggregator.upstream import UpstreamProcess
 
@@ -33,10 +36,10 @@ async def test_tools_call_routes_via_catalog(monkeypatch):
 
     monkeypatch.setattr("orchestrator.mcp.aggregator.controller.UpstreamClient", MockClient)
 
-    up1 = UpstreamProcess(cfg=SimpleNamespace(name="u1"), process=AsyncMock())
-    up2 = UpstreamProcess(cfg=SimpleNamespace(name="u2"), process=AsyncMock())
+    up1 = UpstreamProcess(cfg=cast(UpstreamServer, SimpleNamespace(name="u1")), process=AsyncMock())
+    up2 = UpstreamProcess(cfg=cast(UpstreamServer, SimpleNamespace(name="u2")), process=AsyncMock())
 
-    ctl = AggregationController([up1, up2], client_factory=MockClient)
+    ctl = AggregationController([up1, up2], client_factory=cast(type[UpstreamClient], MockClient))
 
     # Build catalog via tools/list aggregation
     await ctl.route_request("tools/list", None)

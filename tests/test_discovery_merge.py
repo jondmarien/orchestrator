@@ -1,7 +1,10 @@
+from typing import cast
 from unittest.mock import AsyncMock
 
 import pytest
 
+from orchestrator.config import UpstreamServer
+from orchestrator.mcp.aggregator.client import UpstreamClient
 from orchestrator.mcp.aggregator.controller import AggregationController
 from orchestrator.mcp.aggregator.upstream import UpstreamProcess
 
@@ -46,9 +49,9 @@ async def test_aggregate_list_tools_merges_unique_names(monkeypatch):
     # Build controller with two upstream processes
     from types import SimpleNamespace
 
-    up1 = UpstreamProcess(cfg=SimpleNamespace(name="u1"), process=AsyncMock())
-    up2 = UpstreamProcess(cfg=SimpleNamespace(name="u2"), process=AsyncMock())
-    ctl = AggregationController([up1, up2], client_factory=MockClient)
+    up1 = UpstreamProcess(cfg=cast(UpstreamServer, SimpleNamespace(name="u1")), process=AsyncMock())
+    up2 = UpstreamProcess(cfg=cast(UpstreamServer, SimpleNamespace(name="u2")), process=AsyncMock())
+    ctl = AggregationController([up1, up2], client_factory=cast(type[UpstreamClient], MockClient))
 
     out = await ctl.route_request("tools/list", None)
     assert "result" in out

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 
@@ -39,12 +40,56 @@ def create_app(controller: Any):
         method = scope.get("method")
 
         if method == "GET" and path == "/events":
-            # Minimal SSE setup with one keepalive comment
-            headers = [(b"content-type", b"text/event-stream"), (b"cache-control", b"no-cache")]
+            # Persistent SSE with periodic keepalive
+            headers = [
+                (b"content-type", b"text/event-stream"),
+                (b"cache-control", b"no-cache"),
+                (b"connection", b"keep-alive"),
+            ]
             await send({"type": "http.response.start", "status": 200, "headers": headers})
-            await send(
-                {"type": "http.response.body", "body": b": keepalive\n\n", "more_body": False}
-            )
+            try:
+                # Initial comment
+                await send(
+                    {"type": "http.response.body", "body": b": connected\n\n", "more_body": True}
+                )
+                while True:
+                    await asyncio.sleep(15)
+                    await send(
+                        {
+                            "type": "http.response.body",
+                            "body": b": keepalive\n\n",
+                            "more_body": True,
+                        }
+                    )
+            except Exception:
+                # Client likely disconnected
+                pass
+            return
+
+        if method == "GET" and path == "/health":
+            # Basic health endpoint
+            try:
+                stats = await controller.get_stats()
+                import json
+
+                raw = json.dumps({"status": "ok", **stats}, ensure_ascii=False).encode("utf-8")
+                await send(
+                    {
+                        "type": "http.response.start",
+                        "status": 200,
+                        "headers": [(b"content-type", b"application/json")],
+                    }
+                )
+                await send({"type": "http.response.body", "body": raw, "more_body": False})
+            except Exception:
+                await send(
+                    {
+                        "type": "http.response.start",
+                        "status": 500,
+                        "headers": [(b"content-type", b"text/plain")],
+                    }
+                )
+                await send({"type": "http.response.body", "body": b"error", "more_body": False})
             return
 
         if method == "POST" and path == "/rpc":
@@ -61,16 +106,26 @@ def create_app(controller: Any):
                 import json
 
                 req = json.loads(body.decode("utf-8")) if body else {}
+                rpc_id = req.get("id")
                 rpc_method = req.get("method")
                 params = req.get("params")
                 result = await controller.route_request(rpc_method, params)
                 status = 200
-                resp = result if isinstance(result, dict) else {"result": result}
+                # Wrap with JSON-RPC envelope and echo id
+                if isinstance(result, dict) and ("result" in result or "error" in result):
+                    # result already normalized from controller
+                    payload = {"jsonrpc": "2.0", "id": rpc_id, **result}
+                else:
+                    payload = {"jsonrpc": "2.0", "id": rpc_id, "result": result}
             except Exception as e:
                 status = 200
-                resp = {"error": {"code": -32000, "message": f"Bad request: {e}"}}
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": None,
+                    "error": {"code": -32000, "message": f"Bad request: {e}"},
+                }
 
-            raw = json.dumps(resp, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+            raw = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
             await send(
                 {
                     "type": "http.response.start",

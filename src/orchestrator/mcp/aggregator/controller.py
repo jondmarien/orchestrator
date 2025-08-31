@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
+from typing import Any, cast
 
 from orchestrator.config import UpstreamServer
 from orchestrator.mcp.aggregator.catalog import Catalog
@@ -53,11 +53,14 @@ class AggregationController:
             *(c.initialize() for c in self._clients), return_exceptions=True
         )
         ok_results: list[dict[str, Any]] = []
+        failures: list[str] = []
         for r in results:
             if isinstance(r, Exception):
+                failures.append(str(r))
                 logger.warning("Upstream initialize failed: %s", r)
                 continue
             ok_results.append(r)
+        logger.info("Upstream initialization: %d ok, %d failed", len(ok_results), len(failures))
         return merge_capabilities(ok_results)
 
     async def route_request(self, method: str, params: Any | None) -> dict[str, Any]:
@@ -213,6 +216,7 @@ class AggregationController:
                     if isinstance(r, Exception):
                         logger.warning("Upstream %s failed: %s", method, r)
                         continue
+                    r = cast(dict[str, Any], r)
                     lst = r.get("result") or []
                     if isinstance(lst, list):
                         ok.append(lst)
@@ -236,6 +240,7 @@ class AggregationController:
             if isinstance(r, Exception):
                 logger.warning("Upstream %s failed: %s", method, r)
                 continue
+            r = cast(dict[str, Any], r)
             lst = r.get("result") or []
             if isinstance(lst, list):
                 ok.append(lst)
@@ -247,3 +252,11 @@ class AggregationController:
 
     async def aclose(self) -> None:
         await asyncio.gather(*(c.close() for c in self._clients), return_exceptions=True)
+
+    async def get_stats(self) -> dict[str, Any]:
+        """Return basic health stats: counts of upstreams and tools."""
+        await self._ensure_started()
+        if self._catalog is None:
+            await self._build_catalog()
+        tools_count = len(self._catalog.tools) if self._catalog else 0
+        return {"upstreams": len(self._clients), "tools": tools_count}

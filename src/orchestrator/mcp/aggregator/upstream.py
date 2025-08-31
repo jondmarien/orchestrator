@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import asyncio.subprocess as subprocess
 import contextlib
 import logging
 import os
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class UpstreamProcess:
     cfg: UpstreamServer
-    process: asyncio.subprocess.Process
+    process: subprocess.Process
 
     @property
     def name(self) -> str:
@@ -50,9 +51,9 @@ class UpstreamProcessManager:
         logger.info("Starting upstream server: %s", cfg.name)
         proc = await asyncio.create_subprocess_exec(
             *cfg.command,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             env=env,
         )
         up = UpstreamProcess(cfg=cfg, process=proc)

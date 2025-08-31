@@ -2,7 +2,7 @@
   "servers": [
     {
       "name": "fetch",
-      "command": ["uvx", "mcp-server-fetch"],
+      "command": ["npx", "-y", "@modelcontextprotocol/server-fetch"],
       "env": {}
     },
     {
