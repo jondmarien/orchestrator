@@ -12,6 +12,7 @@ __pycache__/
 .coverage*
 htmlcov/
 .cache/
+.ruff_cache/
 
 # Virtual environments
 .venv/
@@ -24,6 +25,7 @@ venv/
 .uv_lock/
 .uv-python/
 pip-wheel-metadata/
+uv.lock
 
 # OS/editor
 .DS_Store
